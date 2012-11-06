@@ -1,0 +1,11 @@
+#! /bin/sh
+
+HUNKPROG=/usr/bin/apply-stream-hunk
+STREAMDECODE_OPTS="--min-strength 10"
+
+. /etc/elito-rescue.conf
+
+exec /usr/bin/elito-stream-decode \
+     --execute "$HUNKPROG"  \
+     $STREAMDECODE_OPTS
+

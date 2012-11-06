@@ -1,0 +1,63 @@
+#! /bin/sh
+
+LOCKFILE=/var/lock/image.lock
+HOOK_PRE=true
+HOOK_POST=true
+TIMEOUT=600
+HUNKPROG=/usr/bin/apply-stream-hunk
+STREAMDECODE_OPTS="--min-strength 10"
+
+. /etc/elito-rescue.conf
+
+DEV=${1:-mmcblk0p1}
+NAME=${2:-eq3-image.stream}
+
+PROG="try-blockdevice[$DEV]"
+
+
+log_info() {
+    echo -n "$*"
+    logger -t "$PROG" -p info "$*"
+}
+
+log_error() {
+    echo "$*" >&2
+    logger -t "$PROG" -p error "$*"
+}
+
+panic() {
+    log_error "$*"
+    exit 1
+}
+
+mount -o ro /dev/"$DEV" /mnt 2>/dev/null >/dev/null || \
+    panic "failed to mount $DEV"
+
+f=/mnt/$NAME
+
+if test -e "$f"; then
+    tmpdir=`mktemp -d /tmp/tcp-stream.XXXXXX` || panic "Failed to create tmpdir"
+    trap "rm -rf $tmpdir" EXIT
+
+    log_info "found $f"
+    cat "$f" | (
+      umount -l /mnt
+
+      flock -n 250 || panic "Image update already active"
+
+      $HOOK_PRE
+
+      cd tmpdir || panic "Failed to changed into tmpdir"
+      exec /usr/bin/elito-stream-decode \
+	  --execute "$HUNKPROG"  \
+	  $STREAMDECODE_OPTS
+    ) 250>$LOCKFILE || panic "Image update failed"
+
+    sync
+
+    $HOOK_POST
+
+    exec /sbin/reboot -f
+fi
+
+umount /mnt

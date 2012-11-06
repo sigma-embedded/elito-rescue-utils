@@ -1,0 +1,45 @@
+#! /bin/sh
+
+LOCKFILE=/var/lock/image.lock
+HOOK_PRE=true
+HOOK_POST=true
+TIMEOUT=600
+HUNKPROG=/usr/bin/apply-stream-hunk
+STREAMDECODE_OPTS="--min-strength 10"
+
+. /etc/elito-rescue.conf
+
+PROG="tcp-stream"
+
+log_error() {
+    echo "$*" >&2
+    logger -t "$PROG" -p error "$*"
+}
+
+panic() {
+    log_error "$*"
+    exit 1
+}
+
+
+f=`mktemp -d /tmp/tcp-stream.XXXXXX` || panic "Failed to create tmpdir"
+trap "rm -rf $f" EXIT
+
+set -e
+
+exec 250>$LOCKFILE
+flock -n 250 || panic "Image update already active"
+
+echo -n "Receiving data..."
+
+$HOOK_PRE
+
+cd "$f"
+{ timeout -t $TIMEOUT cat || panic "Timeout while receiving stream"; } | \
+    /usr/bin/elito-stream-decode \
+	  --execute "$HUNKPROG"  \
+	  $STREAMDECODE_OPTS \
+    || panic "Failed to apply stream"
+echo " done"
+
+$HOOK_POST
