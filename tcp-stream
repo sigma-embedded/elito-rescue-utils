@@ -10,16 +10,7 @@ STREAMDECODE_OPTS="--min-strength 10"
 . /etc/elito-rescue.conf
 
 PROG="tcp-stream"
-
-log_error() {
-    echo "$*" >&2
-    logger -t "$PROG" -p error "$*"
-}
-
-panic() {
-    log_error "$*"
-    exit 1
-}
+. /usr/share/elito-rescue/functions
 
 
 f=`mktemp -d /tmp/tcp-stream.XXXXXX` || panic "Failed to create tmpdir"

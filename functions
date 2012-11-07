@@ -1,0 +1,21 @@
+#! /bin/sh
+
+log_debug() {
+    logger -t 'apply-stream-hunk' -p debug "$*"
+}
+
+log_info() {
+    echo -n "$*"
+    logger -t "$PROG" -p info "$*"
+}
+
+log_error() {
+    echo "$*" >&2
+    logger -t "$PROG" -p error "$*"
+}
+
+panic() {
+    log_error "$*"
+    ${HOOK_PANIC:-:}
+    exit 1
+}

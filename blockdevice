@@ -13,22 +13,7 @@ DEV=${1:-mmcblk0p1}
 NAME=${2:-eq3-image.stream}
 
 PROG="try-blockdevice[$DEV]"
-
-
-log_info() {
-    echo -n "$*"
-    logger -t "$PROG" -p info "$*"
-}
-
-log_error() {
-    echo "$*" >&2
-    logger -t "$PROG" -p error "$*"
-}
-
-panic() {
-    log_error "$*"
-    exit 1
-}
+. /usr/share/elito-rescue/functions
 
 mount -o ro /dev/"$DEV" /mnt 2>/dev/null >/dev/null || \
     panic "failed to mount $DEV"
