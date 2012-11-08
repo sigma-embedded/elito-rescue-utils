@@ -23,3 +23,18 @@ panic() {
     ${HOOK_PANIC:-:}
     exit 1
 }
+
+wait_ok() {
+    echo -n "$1"
+    if tty 2>/dev/null >/dev/null; then
+	read
+    else
+	REPLY=${2:-yes}
+	echo "$REPLY (implied)"
+    fi
+
+    case $REPLY in
+      [yY]*) ;;
+      *)    echo "aborting..."; exit 0
+    esac
+}
