@@ -14,6 +14,10 @@ log_error() {
     logger -t "$PROG" -p error "$*"
 }
 
+log_success() {
+    echo "${1:- ok}"
+}
+
 panic() {
     log_error "$*"
     ${HOOK_PANIC:-:}
