@@ -29,7 +29,7 @@ cd "$f"
 { timeout -t $TIMEOUT cat || panic "Timeout while receiving stream"; } | \
     /usr/bin/elito-stream-decode \
 	  --execute "$HUNKPROG"  \
-	  $STREAMDECODE_OPTS \
+	  $STREAMDECODE_OPTS 2>&1 \
     || panic "Failed to apply stream"
 echo " done"
 
