@@ -10,7 +10,7 @@ STREAMDECODE_OPTS="--min-strength 10"
 . /etc/elito-rescue.conf
 
 DEV=${1:-mmcblk0p1}
-NAME=${2:-eq3-image.stream}
+NAME=${2:-image.stream}
 
 PROG="try-blockdevice[$DEV]"
 . /usr/share/elito-rescue/functions
