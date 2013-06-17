@@ -26,7 +26,7 @@ if test -e "$f"; then
     trap "rm -rf $tmpdir" EXIT
 
     log_info "found $f"
-    cat "$f" | (
+    (
       umount -l /mnt
 
       flock -n 250 || panic "Image update already active"
@@ -34,10 +34,10 @@ if test -e "$f"; then
       $HOOK_PRE
 
       cd tmpdir || panic "Failed to changed into tmpdir"
-      exec /usr/bin/elito-stream-decode \
+      cat | /usr/bin/elito-stream-decode \
 	  --execute "$HUNKPROG"  \
 	  $STREAMDECODE_OPTS
-    ) 250>$LOCKFILE || panic "Image update failed"
+    ) 250>$LOCKFILE <"$f" || panic "Image update failed"
 
     sync
 
