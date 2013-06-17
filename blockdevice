@@ -6,6 +6,7 @@ HOOK_POST=true
 TIMEOUT=600
 HUNKPROG=/usr/bin/apply-stream-hunk
 STREAMDECODE_OPTS="--min-strength 10"
+AUTOREBOOT_BLOCKDEV=true
 
 . /etc/elito-rescue.conf
 
@@ -42,7 +43,7 @@ if test -e "$f"; then
 
     $HOOK_POST
 
-    exec /sbin/reboot -f
+    ! $AUTOREBOOT_BLOCKDEV || exec /sbin/reboot -f
 fi
 
 umount /mnt
