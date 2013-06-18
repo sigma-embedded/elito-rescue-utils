@@ -33,7 +33,7 @@ if test -e "$f"; then
 
       $HOOK_PRE
 
-      cd tmpdir || panic "Failed to changed into tmpdir"
+      cd $tmpdir || panic "Failed to changed into tmpdir"
       cat | /usr/bin/elito-stream-decode \
 	  --execute "$HUNKPROG"  \
 	  $STREAMDECODE_OPTS
