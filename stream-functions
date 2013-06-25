@@ -1,0 +1,241 @@
+#! /bin/sh
+
+. /usr/share/elito-rescue/functions
+
+exit_fn() {
+    log_info "apply-stream-hunk failed"
+    _umount_all true
+}
+
+_umount_all() {
+    for i in mnt/*; do
+	umount "$i" || umount -l "$i" || :
+    done 2>/dev/null
+
+    rm -f mounted-*
+
+    "$1" && rmdir mnt/* mnt || :
+}
+
+_mount() {
+    local src=$1
+    local dst=$2
+
+    test -e mounted-"$dst" && return
+
+    log_info "Mounting '$src'..."
+    mkdir -p mnt/"$dst"
+    mount "$src" mnt/"$dst"
+    touch mounted-"$dst"
+    log_success ' done'
+}
+
+## _fn_copy_data <source-name> <dest-name> <partition>
+_fn_copy_data() {
+    local src=$1
+    local dst=${2:-$1}
+    local dev=/dev/${UPDATE_DST}$3
+    _mount "$dev" "part$3"
+
+    log_info "Copying data '$src' to '$dst' (partition #$3)..."
+    mv "$src" mnt/"part$3"/"$dst"
+    log_success ' done'
+
+    _fn_mark_valid "$src"
+}
+
+_fn_recv_script() {
+    log_info "Receiving script '$1'..."
+    cat > "$1"
+    echo " done"
+}
+
+_fn_recv_data() {
+    log_info "Receiving data '$1'..."
+    cat > "$1"
+    echo " done"
+}
+
+_fn_wait_dev() {
+    local dev=/dev/$1
+    local out_fn=true
+
+    if ! test -e wait-"$1" -a ! -b "$dev"; then
+	log_info "Waiting for target device $1..."
+	out_fn=echo
+
+	local now=`date +%s`
+	local next=$(( now + $BLOCKDEV_DELAY ))
+
+	touch -d@$next wait_tm-"$1"
+	touch wait_now
+	while test ! -b "$dev" -a wait_tm-"$1" -nt wait_now; do
+	    usleep $BLOCKDEV_PROGRESS_STEP
+	    echo -n '.'
+	    touch wait_now
+	done
+
+	touch wait-"$1"
+    fi
+
+    if ! test -b "$dev"; then
+	$out_fn ' timeout'
+	return 1
+    else
+	$out_fn ' done'
+	return 0
+    fi
+}
+
+_fn_dd_data() {
+    local type=$1
+    local dev=/dev/${UPDATE_DST}$2
+    local resize=$3
+
+    _fn_wait_dev "${UPDATE_DST}$2" || panic "no such partition while copying '$type' stream to partition #$2..."
+
+    log_info "Copying '$type' stream to partition #$2..."
+    dd of="$dev" bs=$(( 1024*1024 )) 2> "out-$$.txt"
+    log_success 'done'
+
+    sed 's!^!  | !' < "out-$$.txt"
+    rm -f "out-$$.txt"
+
+    if test -n "$resize"; then
+	log_info "Resizing filesystem..."
+	echo
+	resize2fs -p "$dev"
+	log_success ' done'
+    fi
+}
+
+_fn_exec_script() {
+    log_info "Executing '$1'..."
+    chmod +x "$1"
+    ./"$1"
+    rm -f "$1"
+    echo " done"
+}
+
+_fn_mark_valid() {
+   touch "valid-$1"
+}
+
+_fn_set_trigger() {
+    test -n "$LED_NAME" || return 0
+
+    echo "$1" > /sys/class/leds/"${LED_NAME}"/trigger
+}
+
+emit_u8() {
+    local v=`printf '%x' "$1"`
+    printf "\\x$v"
+}
+
+emit_u16() {
+    emit_u8 $(( ($1 >>  0) & 0xff ))
+    emit_u8 $(( ($1 >>  8) & 0xff ))
+}
+
+emit_u32() {
+    emit_u16 $(( ($1 >>  0) & 0xffff ))
+    emit_u16 $(( ($1 >> 16) & 0xffff ))
+}
+
+write_mx28_bootimage() {
+    local part=$1
+    local dev=/dev/${UPDATE_DST}$1
+    local s0=$2
+    local s1=$3
+
+    local sz0
+    local sz1
+    local st0
+    local st1
+    local geo
+    local physdrv=`readlink -f /dev/${UPDATE_DST}`
+ 
+    physdrv=${physdrv##/dev/}
+    read geo < /sys/class/block/${physdrv}p${part}/start
+
+    sz0=`stat -c %s "$s0"`
+    sz1=`stat -c %s "$s1"`
+
+    sz0=$(( (sz0 + 511) / 512 ))
+    sz1=$(( (sz1 + 511) / 512 ))
+
+    st0=$(( geo + 1 ))
+    st1=$(( st0 + sz0 ))
+
+    {
+      emit_u32 0x00112233		# signature
+      emit_u32 0			# primary boot tag
+      emit_u32 1			# secondary boot tag
+      emit_u32 2			# num entries
+
+      # bootstream0
+      emit_u32 0			# chip select; unused
+      emit_u32 0			# drive type; unused
+      emit_u32 0			# drive tag
+      
+      emit_u32 $st0
+      emit_u32 $sz0
+
+      # bootstream1
+      emit_u32 0			# chip select; unused
+      emit_u32 0			# drive type; unused
+      emit_u32 1			# drive tag
+      
+      emit_u32 $st1
+      emit_u32 $sz1
+
+    } | dd of="$dev" bs=512
+
+    dd if="$s0" of="$dev" bs=512 seek=1
+    dd if="$s1" of="$dev" bs=512 seek=$(( sz0 + 1 ))
+}
+
+write_mx6_bootimage() {
+    local part=$1
+    local dev=/dev/${UPDATE_DST}$1
+    local s0=$2
+
+    dd if="$s0" of="$dev" bs=512 skip=1
+}
+
+_stage_common_start() {
+    rm -f tmp-* valid-* mtab
+    rm -f mounted-* wait*
+
+    echo
+
+    _fn_set_trigger "$LED_TRIGGER"
+
+    _fn_wait_dev "$UPDATE_DST" || panic "Target block device does not exist"
+}
+
+_stage_common_end() {
+    _umount_all true
+
+    sync
+    _fn_set_trigger timer
+}
+
+main() {
+    local stage=$1
+    local type=`printf '0x%08x' "$2"`
+    local sz=$3
+
+    log_debug "stage=$stage, type=$type, sz=$sz"
+    trap "exit_fn" EXIT
+
+    case $stage in
+      start|stream|finish|end)
+	    fn_stage_$stage "$type" "$sz" ;;
+
+      *)
+	    panic "Unsupported stage $stage" ;;
+    esac
+
+    trap "" EXIT
+}

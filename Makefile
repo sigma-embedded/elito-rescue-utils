@@ -27,6 +27,7 @@ install-exec:	image-update.cgi | $(DESTDIR)$(cgidir)
 install-data:	| $(DESTDIR)$(wwwdir) $(DESTDIR)$(pkgdatadir)
 	install -p -m 0644 cgi/index.html $(DESTDIR)$(wwwdir)/
 	install -p -m 0644 functions      $(DESTDIR)$(pkgdatadir)/
+	install -p -m 0644 stream-functions $(DESTDIR)$(pkgdatadir)/
 
 install-scripts:| $(DESTDIR)$(bindir)
 	install -p -m 0755 cgi/elito-stream-decode-wrap $(DESTDIR)$(bindir)/elito-stream-decode-wrap
