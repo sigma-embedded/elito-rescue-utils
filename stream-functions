@@ -62,6 +62,12 @@ _fn_recv_data() {
     echo " done"
 }
 
+_fn_skip_data() {
+    log_info "Skipping data '$1'..."
+    cat > /dev/null
+    echo " done"
+}
+
 _fn_wait_dev() {
     local dev=/dev/$1
     local out_fn=true
