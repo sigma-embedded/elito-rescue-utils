@@ -35,7 +35,7 @@
 #include <ccgi.h>
 
 #ifndef LOCKFILE
-#  define LOCKFILE	"/var/lock/image.lock"
+#  define LOCKFILE	"/run/image.lock"
 #endif
 
 struct tmpdir_info {

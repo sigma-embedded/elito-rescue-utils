@@ -1,6 +1,6 @@
 #! /bin/sh
 
-LOCKFILE=/var/lock/image.lock
+LOCKFILE=/run/image.lock
 HOOK_PRE=true
 HOOK_POST=true
 TIMEOUT=600
