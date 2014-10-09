@@ -8,6 +8,8 @@ exit_fn() {
 }
 
 _umount_all() {
+    test -d mnt || return 0
+
     for i in mnt/*; do
 	umount "$i" || umount -l "$i" || :
     done 2>/dev/null
@@ -216,7 +218,7 @@ write_mx6_bootimage() {
 }
 
 _stage_common_start() {
-    rm -f tmp-* valid-* mtab
+    rm -f tmp-* valid-* flag-* mtab
     rm -f mounted-* wait*
 
     echo
