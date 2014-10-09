@@ -30,11 +30,17 @@ _mount() {
     log_success ' done'
 }
 
+_TARGET_DEVICE=
+## _set_target_device <device>
+_set_target_device() {
+    _TARGET_DEVICE=$1
+}
+
 ## _fn_copy_data <source-name> <dest-name> <partition>
 _fn_copy_data() {
     local src=$1
     local dst=${2:-$1}
-    local dev=/dev/${UPDATE_DST}$3
+    local dev=/dev/${_TARGET_DEVICE}$3
     _mount "$dev" "part$3"
 
     log_info "Copying data '$src' to '$dst' (partition #$3)..."
@@ -89,10 +95,10 @@ _fn_wait_dev() {
 
 _fn_dd_data() {
     local type=$1
-    local dev=/dev/${UPDATE_DST}$2
+    local dev=/dev/${_TARGET_DEVICE}$2
     local resize=$3
 
-    _fn_wait_dev "${UPDATE_DST}$2" || panic "no such partition while copying '$type' stream to partition #$2..."
+    _fn_wait_dev "${_TARGET_DEVICE}$2" || panic "no such partition while copying '$type' stream to partition #$2..."
 
     log_info "Copying '$type' stream to partition #$2..."
     dd of="$dev" bs=$(( 1024*1024 )) 2> "out-$$.txt"
@@ -144,7 +150,7 @@ emit_u32() {
 
 write_mx28_bootimage() {
     local part=$1
-    local dev=/dev/${UPDATE_DST}$1
+    local dev=/dev/${_TARGET_DEVICE}$1
     local s0=$2
     local s1=$3
 
@@ -153,7 +159,7 @@ write_mx28_bootimage() {
     local st0
     local st1
     local geo
-    local physdrv=`readlink -f /dev/${UPDATE_DST}`
+    local physdrv=`readlink -f /dev/${_TARGET_DEVICE}`
  
     physdrv=${physdrv##/dev/}
     read geo < /sys/class/block/${physdrv}p${part}/start
@@ -197,7 +203,7 @@ write_mx28_bootimage() {
 
 write_mx6_bootimage() {
     local part=$1
-    local dev=/dev/${UPDATE_DST}$1
+    local dev=/dev/${_TARGET_DEVICE}$1
     local s0=$2
 
     dd if="$s0" of="$dev" bs=512 skip=1
@@ -211,7 +217,10 @@ _stage_common_start() {
 
     _fn_set_trigger "$LED_TRIGGER"
 
-    _fn_wait_dev "$UPDATE_DST" || panic "Target block device does not exist"
+    if test -n "${UPDATE_DST}"; then
+	_fn_wait_dev "$UPDATE_DST" || panic "Target block device does not exist"
+	_set_target_device "$UPDATE_DST"
+    fi
 }
 
 _stage_common_end() {
