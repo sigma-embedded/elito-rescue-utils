@@ -225,9 +225,8 @@ _stage_common_start() {
 
     _fn_set_trigger "$LED_TRIGGER"
 
-    if test -n "${UPDATE_DST}"; then
+    if test -n "${_TARGET_DEVICE}"; then
 	_fn_wait_dev "$UPDATE_DST" || panic "Target block device does not exist"
-	_set_target_device "$UPDATE_DST"
     fi
 }
 
@@ -242,6 +241,10 @@ main() {
     local stage=$1
     local type=`printf '0x%08x' "$2"`
     local sz=$3
+
+    if test -n "${UPDATE_DST}"; then
+	_set_target_device "$UPDATE_DST"
+    fi
 
     log_debug "stage=$stage, type=$type, sz=$sz"
     trap "exit_fn" EXIT
