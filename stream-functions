@@ -223,6 +223,12 @@ _stage_common_start() {
 
     echo
 
+    if test -n "$STREAM_BUILD_TIME"; then
+	build_time=`date -d @"$STREAM_BUILD_TIME"`
+	log_info "Stream built at ${build_time}"
+	echo
+    fi
+
     _fn_set_trigger "$LED_TRIGGER"
 
     if test -n "${_TARGET_DEVICE}"; then
