@@ -105,15 +105,20 @@ _fn_dd_data() {
     local type=$1
     local dev=/dev/${_TARGET_DEVICE}$2
     local resize=$3
+    local ok=true
 
     _fn_wait_dev "${_TARGET_DEVICE}$2" || panic "no such partition while copying '$type' stream to partition #$2..."
 
     log_info "Copying '$type' stream to partition #$2..."
-    dd of="$dev" bs=$(( 1024*1024 )) 2> "out-$$.txt"
-    log_success 'done'
+    dd of="$dev" bs=$(( 1024*1024 )) 2> "out-$$.txt" && log_success " done" || {
+	    log_error " failed ($?)"
+	    ok=false
+	}
 
     sed 's!^!  | !' < "out-$$.txt"
     rm -f "out-$$.txt"
+
+    $ok
 
     if test -n "$resize"; then
 	log_info "Resizing filesystem..."
