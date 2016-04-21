@@ -28,11 +28,12 @@ echo -n "Receiving data..."
 $HOOK_PRE
 
 cd "$f"
-{ timeout -t $TIMEOUT cat || panic "Timeout while receiving stream"; } | \
+{ timeout -t $TIMEOUT cat || panic "Timeout while receiving stream; ret $?"; } | { \
     /usr/bin/elito-stream-decode \
-	  --execute "$HUNKPROG"  \
-	  $STREAMDECODE_OPTS 2>&1 \
-    || panic "Failed to apply stream"
+	--execute "$HUNKPROG"  \
+	$STREAMDECODE_OPTS 2>&1 \
+	|| panic "Failed to apply stream; ret $?"
+}
 echo " done"
 
 $HOOK_POST
