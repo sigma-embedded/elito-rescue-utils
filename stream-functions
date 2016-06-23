@@ -173,7 +173,7 @@ write_mx28_bootimage() {
     local st1
     local geo
     local physdrv=`readlink -f /dev/${_TARGET_DEVICE}`
- 
+
     physdrv=${physdrv##/dev/}
     read geo < /sys/class/block/${physdrv}p${part}/start
 
@@ -196,7 +196,7 @@ write_mx28_bootimage() {
       emit_u32 0			# chip select; unused
       emit_u32 0			# drive type; unused
       emit_u32 0			# drive tag
-      
+
       emit_u32 $st0
       emit_u32 $sz0
 
@@ -204,7 +204,7 @@ write_mx28_bootimage() {
       emit_u32 0			# chip select; unused
       emit_u32 0			# drive type; unused
       emit_u32 1			# drive tag
-      
+
       emit_u32 $st1
       emit_u32 $sz1
 

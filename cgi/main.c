@@ -129,7 +129,7 @@ static void	send_http_error(int v, void *ptr)
 
 		g_headers_send = true;
 	}
-	
+
 	if (v) {
 		loff_t	offs = 0;
 
