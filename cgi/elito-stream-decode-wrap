@@ -2,10 +2,12 @@
 
 HUNKPROG=/usr/bin/apply-stream-hunk
 STREAMDECODE_OPTS="--min-strength 10"
+NOTIFY_PORT=6666
 
 . /etc/elito-rescue.conf
 
 exec /usr/bin/elito-stream-decode \
+     ${NOTIFY_PORT:+--notify-port "$NOTIFY_PORT"} \
      --execute "$HUNKPROG"  \
      $STREAMDECODE_OPTS
 
