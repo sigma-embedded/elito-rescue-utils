@@ -8,6 +8,7 @@ HUNKPROG=/usr/bin/apply-stream-hunk
 STREAMDECODE_OPTS="--min-strength 10"
 #AUTOREBOOT_TCP='/sbin/reboot -f'
 AUTOREBOOT_TCP='/bin/true'
+NOTIFY_PORT=6666
 
 . /etc/elito-rescue.conf
 
@@ -30,6 +31,7 @@ $HOOK_PRE
 cd "$f"
 { timeout -t $TIMEOUT cat || panic "Timeout while receiving stream; ret $?"; } | { \
     /usr/bin/elito-stream-decode \
+        ${NOTIFY_PORT:+--notify-port "$NOTIFY_PORT"} \
 	--execute "$HUNKPROG"  \
 	$STREAMDECODE_OPTS 2>&1 \
 	|| panic "Failed to apply stream; ret $?"

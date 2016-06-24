@@ -7,6 +7,7 @@ TIMEOUT=600
 HUNKPROG=/usr/bin/apply-stream-hunk
 STREAMDECODE_OPTS="--min-strength 10"
 AUTOREBOOT_BLOCKDEV='/sbin/reboot -f'
+NOTIFY_PORT=6666
 
 . /etc/elito-rescue.conf
 
@@ -35,6 +36,7 @@ if test -e "$f"; then
 
       cd $tmpdir || panic "Failed to changed into tmpdir"
       cat | /usr/bin/elito-stream-decode \
+          ${NOTIFY_PORT:+--notify-port "$NOTIFY_PORT"} \
 	  --execute "$HUNKPROG"  \
 	  $STREAMDECODE_OPTS
     ) 250>$LOCKFILE <"$f" || panic "Image update failed"
