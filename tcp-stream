@@ -6,8 +6,7 @@ HOOK_POST=true
 TIMEOUT=600
 HUNKPROG=/usr/bin/apply-stream-hunk
 STREAMDECODE_OPTS="--min-strength 10"
-#AUTOREBOOT_TCP='/sbin/reboot -f'
-AUTOREBOOT_TCP='/bin/true'
+AUTOREBOOT_TCP='/sbin/reboot -f'
 NOTIFY_PORT=6666
 
 . /etc/elito-rescue.conf
