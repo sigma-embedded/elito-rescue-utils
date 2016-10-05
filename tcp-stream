@@ -40,4 +40,8 @@ echo " done"
 
 $HOOK_POST
 
+# close file descriptor
+exec 0<&-
+exec 1>&-
+
 exec $AUTOREBOOT_TCP
